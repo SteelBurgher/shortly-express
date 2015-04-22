@@ -21,6 +21,8 @@ db.knex.schema.hasTable('urls').then(function(exists) {
       link.string('base_url', 255);
       link.string('code', 100);
       link.string('title', 255);
+      link.string('image', 255);
+      link.integer('user_id');
       link.integer('visits');
       link.timestamps();
     }).then(function (table) {
@@ -29,11 +31,25 @@ db.knex.schema.hasTable('urls').then(function(exists) {
   }
 });
 
+// db.knex.schema.hasTable('paths').then(function(exists) {
+//   if (!exists) {
+//     db.knex.schema.createTable('paths', function (path) {
+//       path.increments('id').primary();
+//       path.string('url', 255);
+//       path.integer('visits');
+//       path.timestamps();
+//     }).then(function (table) {
+//       console.log('Created Table', table);
+//     });
+//   }
+// });
+
 db.knex.schema.hasTable('clicks').then(function(exists) {
   if (!exists) {
     db.knex.schema.createTable('clicks', function (click) {
       click.increments('id').primary();
       click.integer('link_id');
+      click.integer('user_id');
       click.timestamps();
     }).then(function (table) {
       console.log('Created Table', table);

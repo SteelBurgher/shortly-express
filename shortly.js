@@ -58,16 +58,65 @@ app.get('/signup', function(req, res){
 
 app.get('/links', function(req, res) {
   if(req.session.user){
-    Links.reset().fetch().then(function(links) {
-      res.send(200, links.models);
-    });
+    // Links.reset().fetch({where: {user_id: req.session.userId}}).then(function(links) {
+    // new Link({user_id: req.session.userId})
+    //   .fetchAll()
+    //   .then(function(models){
+    //   })
+        // db.knex('urls')
+        //   .join('clicks', 'clicks.link_id', 'urls.id')
+        //   .select()
+        //   .then(function(models){
+        //     console.log(models);
+        //     res.send(200, models);
+        //   });
+      db.knex('clicks')
+        .where('user_id', '=', req.session.userId)
+        .then(function(clicks) {
+          console.log('CLICKCLICKCKYCYCYCY', clicks);
+          // res.send(200, models);
+          db.knex('urls')
+            .where('user_id', '=', req.session.userId)
+            .then(function(models) {
+
+              for(var i = 0; i < clicks.length; i++){
+                var link_id = clicks[i].link_id;
+                for(var j = 0; j < models.length; j++){
+                  if(models[j].id === link_id){
+                    if(models[j].userClicks){
+                      models[j].userClicks = models[j].userClicks + 1;
+                    } else {
+                      models[j].userClicks = 1;
+                    }
+                  }
+                }
+              }
+
+              console.log('MODMODMODM', models);
+              res.send(200, models);
+            });
+        });
+
+
+
+      // model.userSpecificClick = #
+
+      // get all clicks by user
+        //iterate through clicks to get userClicks
+
+      // links.models[0] === {
+      //   visits: 10,
+      //   url: //,
+      //   code: //,
+      //   userClicks: 
+      // }
+    // });
   } else {
     res.redirect('/login');
   }
 });
 
-app.post('/links', 
-function(req, res) {
+app.post('/links', function(req, res) {
   var uri = req.body.url;
 
   if (!util.isValidUrl(uri)) {
@@ -75,11 +124,11 @@ function(req, res) {
     return res.send(404);
   }
 
-  new Link({ url: uri }).fetch().then(function(found) {
+  new Link({ url: uri, user_id: req.session.userId }).fetch().then(function(found) {
     if (found) {
       res.send(200, found.attributes);
     } else {
-      util.getUrlTitle(uri, function(err, title) {
+      util.getUrlTitleAndImage(uri, function(err, title, image) {
         if (err) {
           console.log('Error reading URL heading: ', err);
           return res.send(404);
@@ -88,6 +137,8 @@ function(req, res) {
         var link = new Link({
           url: uri,
           title: title,
+          image: image,
+          user_id: req.session.userId,
           base_url: req.headers.origin
         });
 
@@ -115,6 +166,7 @@ app.post('/login', function(req, res){
         bcrypt.compare(password, model.get('password'), function(err, result){
           if(result){
             req.session.user = model.get('username');
+            req.session.userId = model.get('id');
             res.redirect('/');
           } else {
             res.redirect('/login');
@@ -143,6 +195,7 @@ app.post('/signup', function(req, res){
       req.session.user = username;
 
       user.save().then(function(newUser) {
+        req.session.userId = newUser.get('id');
         res.redirect('/');
       });
     }
@@ -167,12 +220,13 @@ app.get('/*', function(req, res) {
       res.redirect('/');
     } else {
       var click = new Click({
-        link_id: link.get('id')
+        link_id: link.get('id'),
+        user_id: req.session.userId
       });
 
       click.save().then(function() {
         db.knex('urls')
-          .where('code', '=', link.get('code'))
+          .where('url', '=', link.get('url'))
           .update({
             visits: link.get('visits') + 1,
           }).then(function() {

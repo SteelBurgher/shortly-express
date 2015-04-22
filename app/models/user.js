@@ -1,6 +1,8 @@
 var db = require('../config');
 var bcrypt = require('bcrypt-nodejs');
 var Promise = require('bluebird');
+var Link = require('./link');
+var Click = require('./click');
 
 var User = db.Model.extend({
   tableName: 'users',
@@ -9,6 +11,11 @@ var User = db.Model.extend({
   links: function() {
     return this.hasMany(Link);
   },
+
+  clicks: function() {
+    return this.hasMany(Click);
+  },
+
   initialize: function(){
     this.on('creating', function(model, attrs, options){
       // var shasum = crypto.createHash('sha1');
